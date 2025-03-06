@@ -130,12 +130,16 @@ void ble_app_deinit(void) {
 void hci_cmd_resp_release(uint32_t flag) {
     UNUSED(flag);
     furi_check(ble_app);
+    FURI_LOG_D(TAG, "HCI/ACI command is being released");
     furi_check(furi_semaphore_release(ble_app->hci_sem) == FuriStatusOk);
 }
 
 void hci_cmd_resp_wait(uint32_t timeout) {
     furi_check(ble_app);
+    uint32_t count = furi_semaphore_get_count(ble_app->hci_sem);
+    FURI_LOG_D(TAG, "HCI/ACI command has been sent to CPU 2, waiting for release (currently held by %ld)", count);
     furi_check(furi_semaphore_acquire(ble_app->hci_sem, timeout) == FuriStatusOk);
+    FURI_LOG_D(TAG, "HCI/ACI command been released");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
