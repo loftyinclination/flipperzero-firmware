@@ -36,9 +36,24 @@ static void ble_profile_serial_stop(FuriHalBleProfileBase* profile) {
     furi_check(profile->config == ble_profile_serial);
 
     BleProfileSerial* serial_profile = (BleProfileSerial*)profile;
-    ble_svc_battery_stop(serial_profile->battery_svc);
-    ble_svc_dev_info_stop(serial_profile->dev_info_svc);
-    ble_svc_serial_stop(serial_profile->serial_svc);
+    if (serial_profile->battery_svc) {
+        FURI_LOG_T("serial_profile", "stopping battery profile");
+        ble_svc_battery_stop(serial_profile->battery_svc);
+    } else {
+        FURI_LOG_T("serial_profile", "no battery profile to stop");
+    }
+    if (serial_profile->dev_info_svc) {
+        FURI_LOG_T("serial_profile", "stopping dev info service");
+        ble_svc_dev_info_stop(serial_profile->dev_info_svc);
+    } else {
+        FURI_LOG_T("serial_profile", "no dev info service to stop");
+    }
+    if (serial_profile->serial_svc) {
+        FURI_LOG_T("serial_profile", "stopping serial service");
+        ble_svc_serial_stop(serial_profile->serial_svc);
+    } else {
+        FURI_LOG_T("serial_profile", "no serial service to stop");
+    }
 }
 
 // AN5289: 4.7, in order to use flash controller interval must be at least 25ms + advertisement, which is 30 ms
