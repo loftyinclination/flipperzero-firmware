@@ -195,7 +195,7 @@ BleEventFlowStatus ble_event_app_notification(void* pckt) {
             gap_verify_connection_parameters(gap);
             if(gap->config->pairing_method != GapPairingNone) {
                 // Start pairing by sending security request
-                aci_gap_slave_security_req(event->Connection_Handle);
+                aci_gap_peripheral_security_req(event->Connection_Handle);
             }
         } break;
 
@@ -418,7 +418,7 @@ static void gap_init_svc(Gap* gap, const GapRootSecurityKeys* root_keys) {
         // "Just works" pairing method (iOS accepts it, it seems Android and Linux don't)
         auth_req_mitm_mode = MITM_PROTECTION_NOT_REQUIRED;
         auth_req_use_fixed_pin = USE_FIXED_PIN_FOR_PAIRING_ALLOWED;
-        // If "just works" isn't supported, we want the numeric comparaison method
+        // If "just works" isn't supported, we want the numeric comparison method
         aci_gap_set_io_capability(IO_CAP_DISPLAY_YES_NO);
         keypress_supported = true;
     }
@@ -437,7 +437,7 @@ static void gap_init_svc(Gap* gap, const GapRootSecurityKeys* root_keys) {
         CFG_IDENTITY_ADDRESS);
     // Configure whitelist
     FURI_LOG_T(TAG, "configuring whitelist");
-    aci_gap_configure_whitelist();
+    aci_gap_configure_filter_accept_list();
 }
 
 static void gap_advertise_start(GapState new_state) {
