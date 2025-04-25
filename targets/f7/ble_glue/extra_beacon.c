@@ -32,7 +32,7 @@ void gap_extra_beacon_init(void) {
             extra_beacon.extra_beacon_state = GapExtraBeaconStateStopped;
             gap_extra_beacon_set_config(&extra_beacon.last_config);
         }
-
+        FURI_LOG_T(TAG, "State restored");
     } else {
         // First time init
         FURI_LOG_I(TAG, "Init");
@@ -40,6 +40,7 @@ void gap_extra_beacon_init(void) {
         extra_beacon.extra_beacon_data_len = 0;
         memset(extra_beacon.extra_beacon_data, 0, EXTRA_BEACON_MAX_DATA_SIZE);
         extra_beacon.state_mutex = furi_mutex_alloc(FuriMutexTypeNormal);
+        FURI_LOG_T(TAG, "Initted");
     }
 }
 

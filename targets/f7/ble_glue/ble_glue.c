@@ -344,6 +344,7 @@ static void ble_sys_user_event_callback(void* pPayload) {
 
     TL_AsynchEvt_t* p_sys_event =
         (TL_AsynchEvt_t*)(((tSHCI_UserEvtRxParam*)pPayload)->pckt->evtserial.evt.payload);
+    FURI_LOG_D(TAG, "Sys event");
 
     if(p_sys_event->subevtcode == SHCI_SUB_EVT_CODE_READY) {
         FURI_LOG_I(TAG, "Core2 started");

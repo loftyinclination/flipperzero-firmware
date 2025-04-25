@@ -333,8 +333,11 @@ static void gap_init_svc(Gap* gap, const GapRootSecurityKeys* root_keys) {
     uint32_t srd_bd_addr[2];
 
     // Configure mac address
-    aci_hal_write_config_data(
+    status = aci_hal_write_config_data(
         CONFIG_DATA_PUBADDR_OFFSET, CONFIG_DATA_PUBADDR_LEN, gap->config->mac_address);
+    if(status) {
+        FURI_LOG_E(TAG, "Failed setting mac address: %d", status);
+    }
 
     /* Static random Address
      * The two upper bits shall be set to 1
@@ -351,20 +354,31 @@ static void gap_init_svc(Gap* gap, const GapRootSecurityKeys* root_keys) {
     aci_hal_write_config_data(CONFIG_DATA_ER_OFFSET, CONFIG_DATA_ER_LEN, root_keys->erk);
     // Set TX Power to 0 dBm
     aci_hal_set_tx_power_level(1, 0x19);
+
     // Initialize GATT interface
-    aci_gatt_init();
+    FURI_LOG_T(TAG, "initialising BLE stack for GATT operations");
+    status = aci_gatt_init();
+    if(status) {
+        FURI_LOG_E(TAG, "Failed to init GATT service: %d", status);
+    }
+
     // Initialize GAP interface
     // Skip fist symbol AD_TYPE_COMPLETE_LOCAL_NAME
     char* name = gap->service.adv_name + 1;
-    aci_gap_init(
+    FURI_LOG_T(TAG, "initialising BLE stack for GAP operations as %d", gap->config->role);
+    status = aci_gap_init(
         gap->config->role,
         0,
         strlen(name),
         &gap->service.gap_svc_handle,
         &gap->service.dev_name_char_handle,
         &gap->service.appearance_char_handle);
+    if(status) {
+        FURI_LOG_E(TAG, "Failed to init GAP service: %d", status);
+    }
 
     // Set GAP characteristics
+    FURI_LOG_T(TAG, "setting device name");
     status = aci_gatt_update_char_value(
         gap->service.gap_svc_handle,
         gap->service.dev_name_char_handle,
@@ -375,6 +389,7 @@ static void gap_init_svc(Gap* gap, const GapRootSecurityKeys* root_keys) {
         FURI_LOG_E(TAG, "Failed updating name characteristic: %d", status);
     }
 
+    FURI_LOG_T(TAG, "setting device appearance");
     uint8_t gap_appearence_char_uuid[2] = {
         gap->config->appearance_char & 0xff, gap->config->appearance_char >> 8};
     status = aci_gatt_update_char_value(
@@ -387,11 +402,13 @@ static void gap_init_svc(Gap* gap, const GapRootSecurityKeys* root_keys) {
         FURI_LOG_E(TAG, "Failed updating appearence characteristic: %d", status);
     }
     // Set default PHY
+    FURI_LOG_T(TAG, "configuring which PHY layer to use");
     hci_le_set_default_phy(ALL_PHYS_PREFERENCE, TX_2M_PREFERRED, RX_2M_PREFERRED);
     // Set I/O capability
     uint8_t auth_req_mitm_mode = MITM_PROTECTION_REQUIRED;
     uint8_t auth_req_use_fixed_pin = USE_FIXED_PIN_FOR_PAIRING_FORBIDDEN;
     bool keypress_supported = false;
+    FURI_LOG_T(TAG, "setting IO capability");
     if(gap->config->pairing_method == GapPairingPinCodeShow) {
         aci_gap_set_io_capability(IO_CAP_DISPLAY_ONLY);
     } else if(gap->config->pairing_method == GapPairingPinCodeVerifyYesNo) {
@@ -405,7 +422,9 @@ static void gap_init_svc(Gap* gap, const GapRootSecurityKeys* root_keys) {
         aci_gap_set_io_capability(IO_CAP_DISPLAY_YES_NO);
         keypress_supported = true;
     }
-    // Setup  authentication
+
+    // Setup authentication
+    FURI_LOG_T(TAG, "setting auth requirement");
     aci_gap_set_authentication_requirement(
         gap->config->bonding_mode,
         auth_req_mitm_mode,
@@ -417,6 +436,7 @@ static void gap_init_svc(Gap* gap, const GapRootSecurityKeys* root_keys) {
         0,
         CFG_IDENTITY_ADDRESS);
     // Configure whitelist
+    FURI_LOG_T(TAG, "configuring whitelist");
     aci_gap_configure_whitelist();
 }
 
@@ -607,14 +627,21 @@ GapState gap_get_state(void) {
 
 void gap_thread_stop(void) {
     if(gap) {
+        FURI_LOG_T(TAG, "stopping gap thread (acquiring mutex)");
         furi_check(furi_mutex_acquire(gap->state_mutex, FuriWaitForever) == FuriStatusOk);
         gap->enable_adv = false;
         GapCommand command = GapCommandKillThread;
+
+        FURI_LOG_T(TAG, "queuing stop command");
         furi_message_queue_put(gap->command_queue, &command, FuriWaitForever);
         furi_check(furi_mutex_release(gap->state_mutex) == FuriStatusOk);
+
+        FURI_LOG_T(TAG, "joining gap thread and freeing");
         furi_thread_join(gap->thread);
         furi_thread_free(gap->thread);
         gap->thread = NULL;
+
+        FURI_LOG_T(TAG, "freeing resources");
         // Free resources
         furi_mutex_free(gap->state_mutex);
         gap->state_mutex = NULL;
@@ -623,9 +650,13 @@ void gap_thread_stop(void) {
         furi_timer_free(gap->advertise_timer);
         gap->advertise_timer = NULL;
 
+        FURI_LOG_T(TAG, "resetting event dispatcher");
         ble_event_dispatcher_reset();
         free(gap);
         gap = NULL;
+        FURI_LOG_T(TAG, "gap thread stopped");
+    } else {
+        FURI_LOG_T(TAG, "no gap thread to stop");
     }
 }
 

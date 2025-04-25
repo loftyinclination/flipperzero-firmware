@@ -129,6 +129,7 @@ bool furi_hal_bt_start_radio_stack(void) {
     furi_hal_bt_unlock_core2();
 
     gap_extra_beacon_init();
+    FURI_LOG_T(TAG, "finished starting radio stack");
     return res;
 }
 

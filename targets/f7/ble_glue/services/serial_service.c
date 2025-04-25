@@ -79,6 +79,7 @@ static BleEventAckStatus ble_svc_serial_event_handler(void* event, void* context
     evt_blecore_aci* blecore_evt = (evt_blecore_aci*)event_pckt->data;
     aci_gatt_attribute_modified_event_rp0* attribute_modified;
     if(event_pckt->evt == HCI_VENDOR_SPECIFIC_DEBUG_EVT_CODE) {
+        FURI_LOG_I(TAG, "ACI event received for processing by serial service handler");
         if(blecore_evt->ecode == ACI_GATT_ATTRIBUTE_MODIFIED_VSEVT_CODE) {
             attribute_modified = (aci_gatt_attribute_modified_event_rp0*)blecore_evt->data;
             if(attribute_modified->Attr_Handle ==
@@ -137,6 +138,8 @@ static BleEventAckStatus ble_svc_serial_event_handler(void* event, void* context
             }
             ret = BleEventAckFlowEnable;
         }
+    } else {
+        FURI_LOG_I(TAG, "HCI event received for processing by serial service handler");
     }
     return ret;
 }
