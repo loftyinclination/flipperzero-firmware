@@ -53,6 +53,7 @@ static const GapConfig serial_template_config = {
             .UUID_Type = UUID_TYPE_16,
             .Service_UUID_16 = 0x3080,
         },
+    .role = GAP_PERIPHERAL_ROLE,
     .appearance_char = 0x8600,
     .bonding_mode = true,
     .pairing_method = GapPairingPinCodeShow,

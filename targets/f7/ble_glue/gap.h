@@ -76,6 +76,7 @@ typedef struct {
     } adv_service;
     uint8_t mfg_data[23];
     uint8_t mfg_data_len;
+    uint8_t role;
     uint16_t appearance_char;
     bool bonding_mode;
     GapPairing pairing_method;

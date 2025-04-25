@@ -178,7 +178,7 @@ Bt* bt_alloc(void) {
     bt->rpc = furi_record_open(RECORD_RPC);
     bt->rpc_event = furi_event_flag_alloc();
 
-    // API evnent
+    // API event
     bt->api_event = furi_event_flag_alloc();
 
     return bt;
@@ -407,9 +407,13 @@ static void bt_change_profile(Bt* bt, BtMessage* message) {
             bt_on_gap_event_callback,
             bt);
         if(bt->current_profile) {
-            FURI_LOG_I(TAG, "Bt App started");
+            FURI_LOG_I(TAG, "Bt GAP App started");
             if(bt->bt_settings.enabled) {
-                furi_hal_bt_start_advertising();
+                if (furi_hal_bt_can_advertise()) {
+                    furi_hal_bt_start_advertising();
+                } else {
+                    FURI_LOG_D(TAG, "Role does not permit advertising");
+                }
             }
             furi_hal_bt_set_key_storage_change_callback(bt_on_key_storage_change_callback, bt);
         } else {

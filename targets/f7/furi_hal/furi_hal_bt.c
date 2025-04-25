@@ -152,6 +152,18 @@ bool furi_hal_bt_is_testing_supported(void) {
     }
 }
 
+bool furi_hal_bt_can_advertise(void) {
+    if (current_config.role == 0) {
+        return false;
+    }
+
+    if ((current_config.role & GAP_PERIPHERAL_ROLE) != 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 bool furi_hal_bt_check_profile_type(
     FuriHalBleProfileBase* profile,
     const FuriHalBleProfileTemplate* profile_template) {
@@ -253,6 +265,8 @@ bool furi_hal_bt_is_active(void) {
 }
 
 void furi_hal_bt_start_advertising(void) {
+    furi_check(furi_hal_bt_can_advertise());
+
     if(gap_get_state() == GapStateIdle) {
         gap_start_advertising();
     }

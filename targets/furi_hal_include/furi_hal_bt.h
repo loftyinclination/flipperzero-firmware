@@ -62,6 +62,12 @@ bool furi_hal_bt_is_gatt_gap_supported(void);
  */
 bool furi_hal_bt_is_testing_supported(void);
 
+/** Check if the currently configured GAP role allows for broadcasting
+ *
+ * @return  true if supported
+ */
+bool furi_hal_bt_can_advertise(void);
+
 /** Check if particular instance of profile belongs to given type
  *
  * @param profile           FuriHalBtProfile instance. If NULL, uses current profile

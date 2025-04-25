@@ -384,6 +384,7 @@ static GapConfig template_config = {
         .UUID_Type = UUID_TYPE_16,
         .Service_UUID_16 = HUMAN_INTERFACE_DEVICE_SERVICE_UUID,
     },
+    .role = GAP_PERIPHERAL_ROLE,
     .appearance_char = GAP_APPEARANCE_KEYBOARD,
     .bonding_mode = true,
     .pairing_method = GapPairingPinCodeVerifyYesNo,
