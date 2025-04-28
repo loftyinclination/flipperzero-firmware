@@ -168,20 +168,22 @@ void furi_log_print_format(FuriLogLevel level, const char* tag, const char* form
 }
 
 void furi_log_print_raw_format(FuriLogLevel level, const char* format, ...) {
-    if(level <= furi_log.log_level &&
-       furi_mutex_acquire(furi_log.mutex, FuriWaitForever) == FuriStatusOk) {
-        FuriString* string;
-        string = furi_string_alloc();
-        va_list args;
-        va_start(args, format);
-        furi_string_vprintf(string, format, args);
-        va_end(args);
-
-        furi_log_puts(furi_string_get_cstr(string));
-        furi_string_free(string);
-
-        furi_mutex_release(furi_log.mutex);
+    if(level > furi_log.log_level) return;
+    while (furi_mutex_acquire(furi_log.mutex, 200) != FuriStatusOk) {
+        // spin
     }
+
+    FuriString* string;
+    string = furi_string_alloc();
+    va_list args;
+    va_start(args, format);
+    furi_string_vprintf(string, format, args);
+    va_end(args);
+
+    furi_log_puts(furi_string_get_cstr(string));
+    furi_string_free(string);
+
+    furi_mutex_release(furi_log.mutex);
 }
 
 void furi_log_set_level(FuriLogLevel level) {

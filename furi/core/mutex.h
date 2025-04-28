@@ -35,7 +35,7 @@ void furi_mutex_free(FuriMutex* instance);
 /** Acquire mutex
  *
  * @param      instance  The pointer to FuriMutex instance
- * @param[in]  timeout   The timeout
+ * @param[in]  timeout   The timeout, in ticks.
  *
  * @return     The furi status.
  */
