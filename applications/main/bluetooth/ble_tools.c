@@ -96,8 +96,8 @@ static void ble_command_scan_start(void) {
     // opcode group field
     rq.ogf = 0x3f;
     // opcode command field
-    rq.ocf = 0x96;
-    rq.event = 0x0F; // unused?
+    rq.ocf = 0x97;
+    rq.event = 0xFF; // unused?
     rq.cparam = cmd_buffer;
     rq.clen = 6;
     rq.rparam = &status;
