@@ -15,6 +15,8 @@
 #include <ble/ble.h>
 #include <furi_hal_bt.h>
 
+#include <stdint.h>
+#include <core/log.h>
 
 #define TAG "BleTool =^_^="
 
@@ -75,8 +77,79 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
 
     hci_uart_pckt* pUartPckt = (hci_uart_pckt*) &event;
     hci_event_pckt* event_pckt = (hci_event_pckt*) (pUartPckt->data);
+    evt_blecore_aci* blecore_evt = (evt_blecore_aci*)event_pckt->data;
 
-    FURI_LOG_I(TAG, "received event in ble tool: opcode? %d", event_pckt->evt);
+    FURI_LOG_D(
+        TAG,
+        "received event in ble tool: opcode: 0x%x, event type: 0x%x",
+        event_pckt->evt,
+        pUartPckt->type);
+
+    if(event_pckt->evt != HCI_LE_META_EVT_CODE) {
+        FURI_LOG_W(TAG, "received non LE meta event");
+        return BleEventNotAck;
+    }
+
+    if (blecore_evt->ecode == HCI_LE_EXTENDED_ADVERTISING_REPORT_SUBEVT_CODE) {
+        FURI_LOG_D(TAG, "received extended advertising response");
+        return BleEventAckFlowEnable;
+    }
+
+    if(blecore_evt->ecode != HCI_LE_ADVERTISING_REPORT_SUBEVT_CODE) {
+        hci_le_advertising_report_event_rp0 *rp0 = (void*) blecore_evt->data;
+        int report_index;
+        for (report_index = 0; report_index < rp0->Num_Reports; report_index++) {
+            Advertising_Report_t report = rp0->Advertising_Report[report_index];
+            FURI_LOG_D(TAG, "received advertising response from %s", report.Address);
+            int i = 0;
+            do {
+                int length = report.Data[i++];
+                int type = report.Data[i++];
+                switch (type) {
+                    case 0x01:
+                        FURI_LOG_D(TAG, "flags");
+                        break;
+                    case 0x02:
+                    case 0x03:
+                    case 0x04:
+                    case 0x05:
+                    case 0x06:
+                    case 0x07:
+                        FURI_LOG_D(TAG, "service ids");
+                        break;
+                    case 0x08:
+                        FURI_LOG_D(TAG, "name (short)");
+                        break;
+                    case 0x09:
+                        FURI_LOG_D(TAG, "name (complete)");
+                        break;
+                    case 0x0A:
+                        FURI_LOG_D(TAG, "TX power");
+                        break;
+                    case 0x0D:
+                        FURI_LOG_D(TAG, "Device class");
+                        break;
+                    case 0x0E:
+                        FURI_LOG_D(TAG, "Pairing Hash");
+                        break;
+                    case 0x0F:
+                        FURI_LOG_D(TAG, "Pairing Randomiser");
+                        break;
+                    case 0x10:
+                        FURI_LOG_D(TAG, "Device ID");
+                        break;
+                    default:
+                        FURI_LOG_D(TAG, "Unhandled data type %x", type);
+                        break;
+                }
+
+                i += length - 1;
+            }
+            while (i < report.Length_Data);
+        }
+
+        return BleEventAckFlowEnable;
+    }
 
     return BleEventNotAck;
 }
@@ -202,7 +275,7 @@ const FuriHalBleProfileTemplate* ble_tool_profile = &profile_callbacks;
 
 int32_t ble_tools_app(void* p) {
     UNUSED(p);
-    FURI_LOG_I(TAG, "v11");
+    FURI_LOG_I(TAG, "v13");
 
     FURI_LOG_I(TAG, "allocating view port");
     ViewPort* view_port = view_port_alloc();
