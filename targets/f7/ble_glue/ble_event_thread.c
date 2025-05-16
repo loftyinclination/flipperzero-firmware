@@ -16,7 +16,6 @@
 #define BLE_EVENT_THREAD_FLAG_ALL                                         \
     (BLE_EVENT_THREAD_FLAG_SHCI_EVENT | BLE_EVENT_THREAD_FLAG_HCI_EVENT | \
      BLE_EVENT_THREAD_FLAG_KILL_THREAD)
-#define FURI_BLE_EXTRA_LOG 1
 
 static FuriThread* event_thread = NULL;
 
