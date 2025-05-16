@@ -45,6 +45,15 @@ static GapConfig scan_template_config = {
             .UUID_Type = UUID_TYPE_16,
             .Service_UUID_16 = 0xa6a6, // doesn't matter
         },
+    .masks =
+        {
+            .event = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0b0001'0000}, // only meta events = 61
+            .le_event = {
+                0b0000'0010, // le advertising report event = 1
+                0b0001'0000, // le extended advertising report event = 12
+                0b0000'0001, // le scan timeout event = 16
+                0x00, 0x00, 0x00, 0x00, 0x00},
+        },
     .role = GAP_CENTRAL_ROLE,
     .appearance_char = 0x8600, // doesn't matter
     .bonding_mode = false, // we're only scanning, don't need to remember anything

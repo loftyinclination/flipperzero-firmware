@@ -69,12 +69,19 @@ typedef struct {
     uint16_t supervisor_timeout;
 } GapConnectionParamsRequest;
 
+#define DEFAULT_EVENT_MASK {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x20}
+#define DEFAULT_LE_EVENT_MASK {0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+
 typedef struct {
     struct {
         uint8_t UUID_Type;
         uint16_t Service_UUID_16;
         uint8_t Service_UUID_128[16];
     } adv_service;
+    struct {
+        uint8_t event[8];
+        uint8_t le_event[8];
+    } masks;
     uint8_t mfg_data[23];
     uint8_t mfg_data_len;
     uint8_t role;

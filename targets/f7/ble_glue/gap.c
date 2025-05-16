@@ -332,6 +332,18 @@ static void gap_init_svc(Gap* gap, const GapRootSecurityKeys* root_keys) {
     tBleStatus status;
     uint32_t srd_bd_addr[2];
 
+    FURI_LOG_T(TAG, "Setting event mask");
+    status = hci_set_event_mask(gap->config->masks.event);
+    if(status) {
+        FURI_LOG_E(TAG, "Failed setting event mask: %d", status);
+    }
+
+    FURI_LOG_T(TAG, "Setting LE event mask");
+    status = hci_set_event_mask(gap->config->masks.le_event);
+    if(status) {
+        FURI_LOG_E(TAG, "Failed setting LE event mask: %d", status);
+    }
+
     // Configure mac address
     status = aci_hal_write_config_data(
         CONFIG_DATA_PUBADDR_OFFSET, CONFIG_DATA_PUBADDR_LEN, gap->config->mac_address);
