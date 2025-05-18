@@ -91,7 +91,9 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
         "received event in ble tool: event code: 0x%x",
         event_pckt->evt);
 
-    if(event_pckt->evt != HCI_LE_META_EVT_CODE) {
+    if(event_pckt->evt == HCI_VENDOR_SPECIFIC_DEBUG_EVT_CODE) {
+        FURI_LOG_W(TAG, "received vendor specific event");
+    } else if(event_pckt->evt != HCI_LE_META_EVT_CODE) {
         FURI_LOG_W(TAG, "received non LE meta event");
         return BleEventNotAck;
     }
