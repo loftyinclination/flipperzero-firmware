@@ -2,6 +2,8 @@
 #include <core/check.h>
 #include <furi.h>
 #include <ble/ble.h>
+#include <core/log.h>
+#include <interface/patterns/ble_thread/tl/tl.h>
 
 #include <m-list.h>
 
@@ -17,6 +19,33 @@ static bool initialized = false;
 
 BleEventFlowStatus ble_event_dispatcher_process_event(void* payload) {
     furi_check(initialized);
+
+    hci_event_pckt* event_pckt = (hci_event_pckt*)(((hci_uart_pckt*)payload)->data);
+
+    furi_log_print_raw_format(
+        FuriLogLevelInfo,
+        "%lu %s[I][BleEventDispatcher] dispatching event: 0x%02X, payload: \""
+        _FURI_LOG_CLR_RESET,
+        furi_get_tick(),
+        _FURI_LOG_CLR_I,
+        event_pckt->evt);
+
+    for (uint32_t i = 0; i < event_pckt->plen; i++) {
+        uint8_t b = event_pckt->data[i];
+        if (i == 0) {
+            furi_log_print_raw_format(
+                FuriLogLevelInfo,
+                "%02X", b);
+        } else {
+            furi_log_print_raw_format(
+                FuriLogLevelInfo,
+                " %02X", b);
+        }
+    }
+
+    furi_log_print_raw_format(
+        FuriLogLevelInfo,
+        "\"\r\n");
 
     GapSvcEventHandlerList_it_t it;
     BleEventAckStatus ack_status = BleEventNotAck;
