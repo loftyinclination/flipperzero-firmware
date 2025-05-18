@@ -84,20 +84,19 @@ static void ble_tool_render_callback(Canvas* const canvas, void* context) {
 static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
     UNUSED(context);
 
-    hci_uart_pckt* pUartPckt = (hci_uart_pckt*) &event;
-    hci_event_pckt* event_pckt = (hci_event_pckt*) (pUartPckt->data);
-    evt_blecore_aci* blecore_evt = (evt_blecore_aci*)event_pckt->data;
+    hci_event_pckt* event_pckt = (hci_event_pckt*)(((hci_uart_pckt*)event)->data);
 
     FURI_LOG_D(
         TAG,
-        "received event in ble tool: opcode: 0x%x, event type: 0x%x",
-        event_pckt->evt,
-        pUartPckt->type);
+        "received event in ble tool: event code: 0x%x",
+        event_pckt->evt);
 
     if(event_pckt->evt != HCI_LE_META_EVT_CODE) {
         FURI_LOG_W(TAG, "received non LE meta event");
         return BleEventNotAck;
     }
+
+    evt_blecore_aci* blecore_evt = (evt_blecore_aci*)event_pckt->data;
 
     if (blecore_evt->ecode == HCI_LE_EXTENDED_ADVERTISING_REPORT_SUBEVT_CODE) {
         FURI_LOG_D(TAG, "received extended advertising response");
@@ -284,7 +283,7 @@ const FuriHalBleProfileTemplate* ble_tool_profile = &profile_callbacks;
 
 int32_t ble_tools_app(void* p) {
     UNUSED(p);
-    FURI_LOG_I(TAG, "v13");
+    FURI_LOG_I(TAG, "v15");
 
     FURI_LOG_I(TAG, "allocating view port");
     ViewPort* view_port = view_port_alloc();
