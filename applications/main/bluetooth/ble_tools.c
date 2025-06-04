@@ -65,15 +65,6 @@ static GapConfig scan_template_config = {
         .supervisor_timeout = 0,
     }};
 
-static void ble_tool_input_callback(InputEvent* input_event, void* context) {
-    FuriThreadId thread_id = context;
-
-    if(input_event->key == InputKeyBack && input_event->type == InputTypePress) {
-        FURI_LOG_I(TAG, "sending flag to exit ble tool");
-        furi_thread_flags_set(thread_id, 1);
-    }
-}
-
 static void ble_tool_render_callback(Canvas* const canvas, void* context) {
     UNUSED(context);
 
@@ -164,7 +155,9 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
     return BleEventNotAck;
 }
 
-static void ble_command_scan_start(void) {
+static void ble_command_scan_start(void* context) {
+    UNUSED(context);
+
     struct hci_request rq;
     tBleStatus status = 0;
 
@@ -200,7 +193,9 @@ static void ble_command_scan_start(void) {
     FURI_LOG_I(TAG, "command sent");
 }
 
-static void ble_command_scan_stop(void) {
+static void ble_command_scan_stop(void* context) {
+    UNUSED(context);
+
     struct hci_request rq;
     tBleStatus status = 0;
 
@@ -283,24 +278,126 @@ static const FuriHalBleProfileTemplate profile_callbacks = {
 
 const FuriHalBleProfileTemplate* ble_tool_profile = &profile_callbacks;
 
+typedef enum {
+    BleToolsViewIdMenu,
+    BleToolsViewIdScan,
+    BleToolsViewIdVariableItemList,
+
+} BleToolsViewId;
+
+typedef struct {
+    View* view;
+} BleToolScanner;
+
+typedef struct {
+    ViewDispatcher* view_dispatcher;
+    BleToolScanner* scanner;
+    VariableItemList* variable_item_list;
+} BleTools;
+
+BleToolScanner* ble_tool_scan_view_alloc() {
+    BleToolScanner* scanner = malloc(sizeof(BleToolScanner));
+    View* view = view_alloc();
+    view_set_draw_callback(view, ble_tool_render_callback);
+    view_set_enter_callback(view, ble_command_scan_start);
+    view_set_exit_callback(view, ble_command_scan_stop);
+
+    scanner->view = view;
+    return scanner;
+}
+
+View* ble_tool_view_scan_get_view(BleToolScanner* scanner) {
+    return scanner->view;
+}
+
+void submenu_navigation_event(void* context, uint32_t index) {
+    BleTools* ble_tools = context;
+    FURI_LOG_D(TAG, "submenu nav event");
+
+    // NOTE: I am making an intentional choice not to use the scene_manager, since I want to
+    //       properly understand how the fundamentals work, with the goal of creating an idomatic
+    //       rust wrapper around views and the view dispatcher
+    if (index == BleToolsViewIdScan) {
+        // we don't need to do any additional "on_enter" work here, since we can initialise the view
+        // on startup, and then not touch it
+        view_dispatcher_switch_to_view(ble_tools->view_dispatcher, BleToolsViewIdScan);
+    } else if (index == BleToolsViewIdVariableItemList) {
+        // TODO: populate variable_item_list
+        view_dispatcher_switch_to_view(ble_tools->view_dispatcher, BleToolsViewIdVariableItemList);
+    }
+}
+
+uint32_t ble_tool_switch_to_start(void* context) {
+    UNUSED(context);
+    FURI_LOG_D(TAG, "view nav event");
+    return BleToolsViewIdMenu;
+}
+
+bool ble_tool_navigation_event_callback(void* context) {
+    UNUSED(context);
+    FURI_LOG_D(TAG, "navigation event");
+    return false;
+}
+
 int32_t ble_tools_app(void* p) {
     UNUSED(p);
-    FURI_LOG_I(TAG, "v15");
+    FURI_LOG_I(TAG, "v2.0");
 
-    FURI_LOG_I(TAG, "allocating view port");
-    ViewPort* view_port = view_port_alloc();
-    FURI_LOG_I(TAG, "setting render callback");
-    view_port_draw_callback_set(view_port, ble_tool_render_callback, NULL);
-    FURI_LOG_I(TAG, "setting input callback");
-    view_port_input_callback_set(view_port, ble_tool_input_callback, furi_thread_get_current_id());
-
-    FURI_LOG_I(TAG, "opening gui");
     Gui* gui = furi_record_open(RECORD_GUI);
-    FURI_LOG_I(TAG, "binding view port to gui");
-    gui_add_view_port(gui, view_port, GuiLayerFullscreen);
+    ViewDispatcher* view_dispatcher = view_dispatcher_alloc();
 
-    FURI_LOG_I(TAG, "updating view port");
-    view_port_update(view_port);
+    // view_dispatcher_set_event_callback_context(
+    // input events are, by default, handled in the following order:
+    // 1. view_dispatcher_handle_input
+    // 2. the current view's input callback, if one exists
+    // 3. if the event is a back event
+    //   3a. attempt to return to the previous view, using the view's previous_callback. note: this isn't usually set
+    //   3b. run the navigation_event_callback
+    //   3c. if there is a navigation_event_callback, but it doesn't consume the event, then exit
+    view_dispatcher_set_navigation_event_callback(view_dispatcher, ble_tool_navigation_event_callback);
+
+    Submenu* submenu = submenu_alloc();
+    view_dispatcher_add_view(view_dispatcher, BleToolsViewIdMenu, submenu_get_view(submenu));
+
+    BleToolScanner* scanner = ble_tool_scan_view_alloc();
+    view_dispatcher_add_view(
+        view_dispatcher,
+        BleToolsViewIdScan,
+        ble_tool_view_scan_get_view(scanner));
+
+    VariableItemList* variable_item_list = variable_item_list_alloc();
+    view_dispatcher_add_view(
+        view_dispatcher,
+        BleToolsViewIdVariableItemList,
+        variable_item_list_get_view(variable_item_list));
+
+    // because we're not using the scene_manager, we don't have a view stack to handle back events gracefully
+    // as such, we need to set the usually-unused previous_callback to return to this view
+    view_set_previous_callback(scanner->view, ble_tool_switch_to_start);
+    view_set_previous_callback(variable_item_list_get_view(variable_item_list), ble_tool_switch_to_start);
+
+    BleTools* ble_tools = malloc(sizeof(BleTools));
+    ble_tools->view_dispatcher = view_dispatcher;
+    ble_tools->scanner = scanner;
+    ble_tools->variable_item_list = variable_item_list;
+
+    submenu_add_item(
+        submenu,
+        "Scan",
+        BleToolsViewIdScan,
+        submenu_navigation_event,
+        ble_tools);
+    submenu_add_item(
+        submenu,
+        "Advertising Reports",
+        BleToolsViewIdVariableItemList,
+        submenu_navigation_event,
+        ble_tools);
+
+    variable_item_list_add(variable_item_list, "Test", 0, NULL, NULL);
+
+    FURI_LOG_I(TAG, "attach dispatcher to view");
+    view_dispatcher_attach_to_gui(view_dispatcher, gui, ViewDispatcherTypeFullscreen);
 
     FURI_LOG_I(TAG, "initing ble handlers");
     Bt* bt = furi_record_open(RECORD_BT);
@@ -310,30 +407,41 @@ int32_t ble_tools_app(void* p) {
     furi_check(tool_profile);
     FURI_LOG_I(TAG, "yes!");
 
-    furi_delay_ms(200);
-
     FURI_LOG_I(TAG, "binding to ble handler");
     GapSvcEventHandler* event_handler = ble_event_dispatcher_register_svc_handler(ble_tools_event_handler, tool_profile);
 
-    FURI_LOG_I(TAG, "starting scan");
-    ble_command_scan_start();
-    FURI_LOG_I(TAG, "scan started (maybe)");
+    view_dispatcher_switch_to_view(view_dispatcher, BleToolsViewIdMenu);
    
-    FURI_LOG_I(TAG, "ble tool waiting");
-    furi_thread_flags_wait(1, FuriFlagWaitAny, FuriWaitForever);
+    FURI_LOG_I(TAG, "ble tool running");
+    view_dispatcher_run(view_dispatcher);
 
-    FURI_LOG_I(TAG, "ble tool finished waiting, finishing up");
-    ble_command_scan_stop();
+    FURI_LOG_I(TAG, "ble tool finished running, finishing up");
 
-    view_port_enabled_set(view_port, false);
-    gui_remove_view_port(gui, view_port);
-    furi_record_close(RECORD_GUI);
-
+    FURI_LOG_I(TAG, "resetting BLE");
     ble_event_dispatcher_unregister_svc_handler(event_handler);
+    FURI_LOG_I(TAG, "BLE reset, restoring serial service");
     bt_profile_restore_default(bt);
+    FURI_LOG_I(TAG, "restored serial service");
+
     bt = NULL;
     furi_record_close(RECORD_BT);
-    view_port_free(view_port);
 
+    FURI_LOG_I(TAG, "cleaning view and freeing");
+
+    view_dispatcher_remove_view(view_dispatcher, BleToolsViewIdMenu);
+    submenu_free(submenu);
+
+    view_dispatcher_remove_view(view_dispatcher, BleToolsViewIdVariableItemList);
+    variable_item_list_free(variable_item_list);
+
+    view_dispatcher_remove_view(view_dispatcher, BleToolsViewIdScan);
+    view_free(scanner->view);
+
+    free(ble_tools);
+    view_dispatcher_free(view_dispatcher);
+
+    furi_record_close(RECORD_GUI);
+
+    FURI_LOG_I(TAG, "complete");
     return 0;
 }
