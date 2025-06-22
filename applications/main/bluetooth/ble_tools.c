@@ -150,7 +150,7 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
         return BleEventAckFlowEnable;
     }
 
-    if(blecore_evt->ecode != HCI_LE_ADVERTISING_REPORT_SUBEVT_CODE) {
+    if(blecore_evt->ecode == HCI_LE_ADVERTISING_REPORT_SUBEVT_CODE) {
         hci_le_advertising_report_event_rp0 *rp0 = (void*) blecore_evt->data;
         int report_index;
         for (report_index = 0; report_index < rp0->Num_Reports; report_index++) {
@@ -203,10 +203,14 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
             while (i < report.Length_Data);
         }
 
+        FURI_LOG_I(TAG, "Ack");
+        furi_delay_ms(100);
         return BleEventAckFlowEnable;
     }
 
-    return BleEventNotAck;
+    FURI_LOG_I(TAG, "ack (disable)");
+    furi_delay_ms(100);
+    return BleEventAckFlowDisable;
 }
 
 static void ble_command_scan_start(void* context) {
