@@ -50,10 +50,14 @@ BleEventFlowStatus ble_event_dispatcher_process_event(void* payload) {
     GapSvcEventHandlerList_it_t it;
     BleEventAckStatus ack_status = BleEventNotAck;
 
+    FURI_LOG_I("BleEventDispatcher", "%i possible handlers", GapSvcEventHandlerList_size(handlers));
+
     for(GapSvcEventHandlerList_it(it, handlers); !GapSvcEventHandlerList_end_p(it);
         GapSvcEventHandlerList_next(it)) {
+
         const GapSvcEventHandler* item = GapSvcEventHandlerList_cref(it);
         ack_status = item->callback(payload, item->context);
+
         if(ack_status == BleEventNotAck) {
             /* Keep going */
             continue;
