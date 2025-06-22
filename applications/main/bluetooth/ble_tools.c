@@ -76,11 +76,12 @@ static GapConfig scan_template_config = {
         {
             .event = DEFAULT_EVENT_MASK,
             //.event = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0b0001'0000}, // only meta events = 61
-            .le_event = {
-                0b0000'0010, // le advertising report event = 1
-                0b0001'0000, // le extended advertising report event = 12
-                0b0000'0001, // le scan timeout event = 16
-                0x00, 0x00, 0x00, 0x00, 0x00},
+            .le_event = DEFAULT_LE_EVENT_MASK,
+            //.le_event = {
+            //    0b0000'0010, // le advertising report event = 1
+            //    0b0001'0000, // le extended advertising report event = 12
+            //    0b0000'0001, // le scan timeout event = 16
+            //    0x00, 0x00, 0x00, 0x00, 0x00},
         },
     .role = GAP_CENTRAL_ROLE,
     .appearance_char = 0x8600, // doesn't matter
