@@ -2,6 +2,7 @@
 
 #include <furi.h>
 #include <furi_hal_bt.h>
+#include <m-array.h>
 
 #include <bt/bt_service/bt.h>
 
@@ -39,6 +40,32 @@ typedef PACKED_STRUCT
   uint8_t         data[1];
 } hci_event_pckt;
 
+typedef enum {
+    BleToolsViewIdMenu,
+    BleToolsViewIdScan,
+    BleToolsViewIdVariableItemList,
+} BleToolsViewId;
+
+typedef struct {
+    View* view;
+} BleToolScanner;
+
+typedef struct {
+    uint16_t ecode;
+} LeMetaItem;
+
+ARRAY_DEF(LeMetaEvents, LeMetaItem, M_POD_OPLIST);
+
+typedef struct {
+    ViewDispatcher* view_dispatcher;
+    BleToolScanner* scanner;
+    VariableItemList* variable_item_list;
+
+    uint16_t events;
+    uint16_t non_le_meta_events;
+    LeMetaEvents_t le_meta_events;
+} BleTools;
+
 static GapConfig scan_template_config = {
     .adv_service =
         {
@@ -47,7 +74,8 @@ static GapConfig scan_template_config = {
         },
     .masks =
         {
-            .event = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0b0001'0000}, // only meta events = 61
+            .event = DEFAULT_EVENT_MASK,
+            //.event = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0b0001'0000}, // only meta events = 61
             .le_event = {
                 0b0000'0010, // le advertising report event = 1
                 0b0001'0000, // le extended advertising report event = 12
@@ -66,30 +94,55 @@ static GapConfig scan_template_config = {
     }};
 
 static void ble_tool_render_callback(Canvas* const canvas, void* context) {
-    UNUSED(context);
+    BleTools** ble_tools_ptr = context;
+    BleTools* ble_tools = *ble_tools_ptr;
+
+    FURI_LOG_D(
+        TAG, "drawing (events: %d, non-le meta events: %d, le meta events: %d)",
+        ble_tools->events,
+        ble_tools->non_le_meta_events,
+        LeMetaEvents_size(ble_tools->le_meta_events));
 
     canvas_set_font(canvas, FontPrimary);
-    canvas_draw_str(canvas, 20, 20, "BLE Test");
+    canvas_draw_str(canvas, 0, 8, "BLE Test");
+
+    canvas_set_font(canvas, FontSecondary);
+
+    char buffer[64];
+    snprintf(buffer, sizeof(buffer), "Total Events: %d", ble_tools->events);
+    canvas_draw_str(canvas, 0, 31, buffer);
+
+    snprintf(buffer, sizeof(buffer), "Non-LE Meta Events: %d", ble_tools->non_le_meta_events);
+    canvas_draw_str(canvas, 0, 42, buffer);
+
+    snprintf(buffer, sizeof(buffer), "LE Meta Events: %d", LeMetaEvents_size(ble_tools->le_meta_events));
+    canvas_draw_str(canvas, 0, 53, buffer);
 }
 
 static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
-    UNUSED(context);
+    BleTools* ble_tools = context;
 
     hci_event_pckt* event_pckt = (hci_event_pckt*)(((hci_uart_pckt*)event)->data);
 
-    FURI_LOG_D(
+    FURI_LOG_I(
         TAG,
         "received event in ble tool: event code: 0x%x",
         event_pckt->evt);
+
+    ble_tools->events++;
 
     if(event_pckt->evt == HCI_VENDOR_SPECIFIC_DEBUG_EVT_CODE) {
         FURI_LOG_W(TAG, "received vendor specific event");
     } else if(event_pckt->evt != HCI_LE_META_EVT_CODE) {
         FURI_LOG_W(TAG, "received non LE meta event");
+        ble_tools->non_le_meta_events++;
         return BleEventNotAck;
     }
 
     evt_blecore_aci* blecore_evt = (evt_blecore_aci*)event_pckt->data;
+
+    LeMetaItem* le_meta_event = LeMetaEvents_push_new(ble_tools->le_meta_events);
+    le_meta_event->ecode = blecore_evt->ecode;
 
     if (blecore_evt->ecode == HCI_LE_EXTENDED_ADVERTISING_REPORT_SUBEVT_CODE) {
         FURI_LOG_D(TAG, "received extended advertising response");
@@ -278,29 +331,14 @@ static const FuriHalBleProfileTemplate profile_callbacks = {
 
 const FuriHalBleProfileTemplate* ble_tool_profile = &profile_callbacks;
 
-typedef enum {
-    BleToolsViewIdMenu,
-    BleToolsViewIdScan,
-    BleToolsViewIdVariableItemList,
-
-} BleToolsViewId;
-
-typedef struct {
-    View* view;
-} BleToolScanner;
-
-typedef struct {
-    ViewDispatcher* view_dispatcher;
-    BleToolScanner* scanner;
-    VariableItemList* variable_item_list;
-} BleTools;
-
 BleToolScanner* ble_tool_scan_view_alloc() {
     BleToolScanner* scanner = malloc(sizeof(BleToolScanner));
     View* view = view_alloc();
     view_set_draw_callback(view, ble_tool_render_callback);
     view_set_enter_callback(view, ble_command_scan_start);
     view_set_exit_callback(view, ble_command_scan_stop);
+
+    view_allocate_model(view, ViewModelTypeLockFree, sizeof(BleTools**));
 
     scanner->view = view;
     return scanner;
@@ -320,9 +358,11 @@ void submenu_navigation_event(void* context, uint32_t index) {
     if (index == BleToolsViewIdScan) {
         // we don't need to do any additional "on_enter" work here, since we can initialise the view
         // on startup, and then not touch it
+        FURI_LOG_D(TAG, "navigating to scanner");
         view_dispatcher_switch_to_view(ble_tools->view_dispatcher, BleToolsViewIdScan);
     } else if (index == BleToolsViewIdVariableItemList) {
         // TODO: populate variable_item_list
+        FURI_LOG_D(TAG, "navigating to reports");
         view_dispatcher_switch_to_view(ble_tools->view_dispatcher, BleToolsViewIdVariableItemList);
     }
 }
@@ -379,6 +419,10 @@ int32_t ble_tools_app(void* p) {
     BleTools* ble_tools = malloc(sizeof(BleTools));
     ble_tools->view_dispatcher = view_dispatcher;
     ble_tools->scanner = scanner;
+
+    BleTools** view_model = view_get_model(scanner->view);
+    *view_model = ble_tools;
+
     ble_tools->variable_item_list = variable_item_list;
 
     submenu_add_item(
