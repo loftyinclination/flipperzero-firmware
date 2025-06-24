@@ -141,6 +141,7 @@ bool furi_hal_bt_is_gatt_gap_supported(void) {
     if(furi_hal_bt.stack == FuriHalBtStackLight || furi_hal_bt.stack == FuriHalBtStackFull) {
         return true;
     } else {
+        FURI_LOG_D(TAG, "GATT/GAP not supported for application");
         return false;
     }
 }
