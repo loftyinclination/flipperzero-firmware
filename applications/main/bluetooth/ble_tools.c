@@ -223,21 +223,23 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
 static void ble_command_scan_start(void* context) {
     UNUSED(context);
 
+    // https://github.com/STMicroelectronics/STM32CubeWB/blob/master/Projects/P-NUCLEO-WB55.Nucleo/Applications/BLE/BLE_p2pClient/STM32_WPAN/App/ble_conf.h
+
     struct hci_request rq;
     tBleStatus status = 0;
 
     uint8_t cmd_buffer[6];
-    cmd_buffer[0] = 0x00; // scan type (passive)
-    cmd_buffer[1] = 0x04; // interval
-    cmd_buffer[2] = 0x00;
-    cmd_buffer[3] = 0x04; // window
-    cmd_buffer[4] = 0x01;
-    cmd_buffer[5] = 0x00; // own address type (random)
+    cmd_buffer[0] = 0x20; // interval
+    cmd_buffer[1] = 0x03; 
+    cmd_buffer[2] = 0x20; // window
+    cmd_buffer[3] = 0x03; 
+    cmd_buffer[4] = 0x01; // own address type (random)
+    cmd_buffer[5] = 0x00; // disable filtering
 
     // opcode group field
     rq.ogf = 0x3f;
     // opcode command field
-    rq.ocf = 0x97;
+    rq.ocf = 0x97; // aci_gap_start_general_discovery_proc
     rq.event = 0xFF; // unused?
     rq.cparam = cmd_buffer;
     rq.clen = 6;
