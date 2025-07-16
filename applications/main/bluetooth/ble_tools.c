@@ -51,7 +51,7 @@ typedef struct {
 } BleToolScanner;
 
 typedef struct {
-    uint16_t ecode;
+    uint8_t ecode;
 } LeMetaItem;
 
 ARRAY_DEF(LeMetaEvents, LeMetaItem, M_POD_OPLIST);
@@ -148,7 +148,7 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
     evt_le_meta_event* meta_event = (evt_le_meta_event*)event_pckt->data;
 
     LeMetaItem* le_meta_event = LeMetaEvents_push_new(ble_tools->le_meta_events);
-    uint32_t subevent_code = meta_event->subevent;
+    uint8_t subevent_code = meta_event->subevent;
     le_meta_event->ecode = subevent_code;
 
     if (subevent_code == HCI_LE_EXTENDED_ADVERTISING_REPORT_SUBEVT_CODE) {
@@ -162,14 +162,14 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
         int report_index;
         for (report_index = 0; report_index < rp0->Num_Reports; report_index++) {
             Advertising_Report_t report = rp0->Advertising_Report[report_index];
-            FURI_LOG_D(TAG, "received advertising response from %s", report.Address);
+            FURI_LOG_I(TAG, "received advertising response from %s", report.Address);
             int i = 0;
             do {
                 int length = report.Data[i++];
                 int type = report.Data[i++];
                 switch (type) {
                     case 0x01:
-                        FURI_LOG_D(TAG, "flags");
+                        FURI_LOG_I(TAG, "flags");
                         break;
                     case 0x02:
                     case 0x03:
@@ -177,31 +177,31 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
                     case 0x05:
                     case 0x06:
                     case 0x07:
-                        FURI_LOG_D(TAG, "service ids");
+                        FURI_LOG_I(TAG, "service ids");
                         break;
                     case 0x08:
-                        FURI_LOG_D(TAG, "name (short)");
+                        FURI_LOG_I(TAG, "name (short)");
                         break;
                     case 0x09:
-                        FURI_LOG_D(TAG, "name (complete)");
+                        FURI_LOG_I(TAG, "name (complete)");
                         break;
                     case 0x0A:
-                        FURI_LOG_D(TAG, "TX power");
+                        FURI_LOG_I(TAG, "TX power");
                         break;
                     case 0x0D:
-                        FURI_LOG_D(TAG, "Device class");
+                        FURI_LOG_I(TAG, "Device class");
                         break;
                     case 0x0E:
-                        FURI_LOG_D(TAG, "Pairing Hash");
+                        FURI_LOG_I(TAG, "Pairing Hash");
                         break;
                     case 0x0F:
-                        FURI_LOG_D(TAG, "Pairing Randomiser");
+                        FURI_LOG_I(TAG, "Pairing Randomiser");
                         break;
                     case 0x10:
-                        FURI_LOG_D(TAG, "Device ID");
+                        FURI_LOG_I(TAG, "Device ID");
                         break;
                     default:
-                        FURI_LOG_D(TAG, "Unhandled data type %x", type);
+                        FURI_LOG_I(TAG, "Unhandled data type %x", type);
                         break;
                 }
 
