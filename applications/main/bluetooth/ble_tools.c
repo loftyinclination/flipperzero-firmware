@@ -133,25 +133,32 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
     ble_tools->events++;
 
     if(event_pckt->evt == HCI_VENDOR_SPECIFIC_DEBUG_EVT_CODE) {
-        FURI_LOG_W(TAG, "received vendor specific event");
+        evt_blecore_aci* vendor_specific_event = (evt_blecore_aci*)event_pckt->data;
+        FURI_LOG_W(TAG, "received vendor specific event: 0x%02X", vendor_specific_event->ecode);
+        if (vendor_specific_event->ecode == ACI_GAP_PROC_COMPLETE_VSEVT_CODE)
+            // TODO: return to menu in this case
+            return BleEventAckFlowEnable;
+        return BleEventNotAck;
     } else if(event_pckt->evt != HCI_LE_META_EVT_CODE) {
         FURI_LOG_W(TAG, "received non LE meta event");
         ble_tools->non_le_meta_events++;
         return BleEventNotAck;
     }
 
-    evt_blecore_aci* blecore_evt = (evt_blecore_aci*)event_pckt->data;
+    evt_le_meta_event* meta_event = (evt_le_meta_event*)event_pckt->data;
 
     LeMetaItem* le_meta_event = LeMetaEvents_push_new(ble_tools->le_meta_events);
-    le_meta_event->ecode = blecore_evt->ecode;
+    uint32_t subevent_code = meta_event->subevent;
+    le_meta_event->ecode = subevent_code;
 
-    if (blecore_evt->ecode == HCI_LE_EXTENDED_ADVERTISING_REPORT_SUBEVT_CODE) {
-        FURI_LOG_D(TAG, "received extended advertising response");
+    if (subevent_code == HCI_LE_EXTENDED_ADVERTISING_REPORT_SUBEVT_CODE) {
+        FURI_LOG_I(TAG, "received extended advertising response");
         return BleEventAckFlowEnable;
     }
 
-    if(blecore_evt->ecode == HCI_LE_ADVERTISING_REPORT_SUBEVT_CODE) {
-        hci_le_advertising_report_event_rp0 *rp0 = (void*) blecore_evt->data;
+    if(subevent_code == HCI_LE_ADVERTISING_REPORT_SUBEVT_CODE) {
+        FURI_LOG_I(TAG, "received advertising response");
+        hci_le_advertising_report_event_rp0 *rp0 = (void*) meta_event->data;
         int report_index;
         for (report_index = 0; report_index < rp0->Num_Reports; report_index++) {
             Advertising_Report_t report = rp0->Advertising_Report[report_index];
