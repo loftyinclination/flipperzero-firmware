@@ -113,9 +113,9 @@ void furi_log_print_format(FuriLogLevel level, const char* tag, const char* form
             break;
         }
 
-        if(furi_mutex_acquire(furi_log.mutex, furi_kernel_is_running() ? FuriWaitForever : 0) !=
+        if(furi_mutex_acquire(furi_log.mutex, furi_kernel_is_running() ? 200 : 0) !=
            FuriStatusOk) {
-            break;
+            continue;
         }
 
         FuriString* string = furi_string_alloc();
