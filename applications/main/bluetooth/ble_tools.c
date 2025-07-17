@@ -158,11 +158,14 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
 
     if(subevent_code == HCI_LE_ADVERTISING_REPORT_SUBEVT_CODE) {
         FURI_LOG_I(TAG, "received advertising response");
+
         hci_le_advertising_report_event_rp0 *rp0 = (void*) meta_event->data;
         int report_index;
         for (report_index = 0; report_index < rp0->Num_Reports; report_index++) {
             Advertising_Report_t report = rp0->Advertising_Report[report_index];
             FURI_LOG_I(TAG, "received advertising response from %s", report.Address);
+            furi_delay_ms(200);
+
             int i = 0;
             do {
                 int length = report.Data[i++];
