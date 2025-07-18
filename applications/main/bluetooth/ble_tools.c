@@ -163,58 +163,70 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
         int report_index;
         for (report_index = 0; report_index < rp0->Num_Reports; report_index++) {
             Advertising_Report_t report = rp0->Advertising_Report[report_index];
-            FURI_LOG_I(TAG, "received advertising response from %s", report.Address);
-            furi_delay_ms(200);
+            uint8_t event_data_size = report.Length_Data;
 
-            int i = 0;
-            do {
-                int length = report.Data[i++];
-                int type = report.Data[i++];
-                switch (type) {
-                    case 0x01:
+            FURI_LOG_I(
+                TAG,
+                "received advertising response from %02X-%02X-%02X-%02X-%02X-%02X",
+                report.Address[0],
+                report.Address[1],
+                report.Address[2],
+                report.Address[3],
+                report.Address[4],
+                report.Address[5] );
+
+            int k = 0;
+            uint8_t *adv_report_data;
+            adv_report_data = (uint8_t*)(&report.Length_Data) + 1;
+
+            while(k < event_data_size)
+            {
+                uint8_t adlength = adv_report_data[k];
+                uint8_t adtype = adv_report_data[k + 1];
+                switch (adtype)
+                {
+                    case AD_TYPE_FLAGS: /* now get flags */
+                        /* USER CODE BEGIN AD_TYPE_FLAGS */
                         FURI_LOG_I(TAG, "flags");
-                        break;
-                    case 0x02:
-                    case 0x03:
-                    case 0x04:
-                    case 0x05:
-                    case 0x06:
-                    case 0x07:
-                        FURI_LOG_I(TAG, "service ids");
-                        break;
-                    case 0x08:
-                        FURI_LOG_I(TAG, "name (short)");
-                        break;
-                    case 0x09:
-                        FURI_LOG_I(TAG, "name (complete)");
-                        break;
-                    case 0x0A:
-                        FURI_LOG_I(TAG, "TX power");
-                        break;
-                    case 0x0D:
-                        FURI_LOG_I(TAG, "Device class");
-                        break;
-                    case 0x0E:
-                        FURI_LOG_I(TAG, "Pairing Hash");
-                        break;
-                    case 0x0F:
-                        FURI_LOG_I(TAG, "Pairing Randomiser");
-                        break;
-                    case 0x10:
-                        FURI_LOG_I(TAG, "Device ID");
-                        break;
-                    default:
-                        FURI_LOG_I(TAG, "Unhandled data type %x", type);
-                        break;
-                }
 
-                i += length - 1;
+                        /* USER CODE END AD_TYPE_FLAGS */
+                        break;
+
+                    case AD_TYPE_TX_POWER_LEVEL: /* Tx power level */
+                        /* USER CODE BEGIN AD_TYPE_TX_POWER_LEVEL */
+                        FURI_LOG_I(TAG, "transmit power level");
+
+                        /* USER CODE END AD_TYPE_TX_POWER_LEVEL */
+                        break;
+
+                    case AD_TYPE_SERVICE_DATA: /* service data 16 bits */
+                        /* USER CODE BEGIN AD_TYPE_SERVICE_DATA */
+                        FURI_LOG_I(TAG, "service data");
+
+                        /* USER CODE END AD_TYPE_SERVICE_DATA */
+                        break;
+                    case AD_TYPE_SHORTENED_LOCAL_NAME:
+                        FURI_LOG_I(TAG, "name");
+                        break;
+                    case AD_TYPE_COMPLETE_LOCAL_NAME:
+                        FURI_LOG_I(TAG, "complete name");
+                        break;
+                    case AD_TYPE_APPEARANCE:
+                        FURI_LOG_I(TAG, "appearance");
+                        break;
+
+                    default:
+                        /* USER CODE BEGIN adtype_default */
+                        FURI_LOG_I(TAG, "not sure %d", adtype);
+
+                        /* USER CODE END adtype_default */
+                        break;
+                } /* end switch adtype */
+                k += adlength + 1;
             }
-            while (i < report.Length_Data);
         }
 
         FURI_LOG_I(TAG, "Ack");
-        furi_delay_ms(100);
         return BleEventAckFlowEnable;
     }
 
@@ -398,7 +410,7 @@ bool ble_tool_navigation_event_callback(void* context) {
 
 int32_t ble_tools_app(void* p) {
     UNUSED(p);
-    FURI_LOG_I(TAG, "v2.0");
+    FURI_LOG_I(TAG, "v2.1");
 
     Gui* gui = furi_record_open(RECORD_GUI);
     ViewDispatcher* view_dispatcher = view_dispatcher_alloc();
