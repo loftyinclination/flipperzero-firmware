@@ -231,7 +231,6 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
     }
 
     FURI_LOG_I(TAG, "ack (disable)");
-    furi_delay_ms(100);
     return BleEventAckFlowDisable;
 }
 
