@@ -146,11 +146,12 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
     }
 
     evt_le_meta_event* meta_event = (evt_le_meta_event*)event_pckt->data;
-
-    LeMetaItem* le_meta_event = LeMetaEvents_push_new(ble_tools->le_meta_events);
     uint8_t subevent_code = meta_event->subevent;
-    le_meta_event->ecode = subevent_code;
 
+    /*
+    LeMetaItem* le_meta_event = LeMetaEvents_push_new(ble_tools->le_meta_events);
+    le_meta_event->ecode = subevent_code;
+    */
     if (subevent_code == HCI_LE_EXTENDED_ADVERTISING_REPORT_SUBEVT_CODE) {
         FURI_LOG_I(TAG, "received extended advertising response");
         return BleEventAckFlowEnable;
