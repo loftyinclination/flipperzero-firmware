@@ -184,6 +184,37 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
             {
                 uint8_t adlength = adv_report_data[k];
                 uint8_t adtype = adv_report_data[k + 1];
+
+                furi_log_print_raw_format(
+                    FuriLogLevelInfo,
+                    "%lu %s[I][BleTool =^_^=] size %d, type %d, (initial k %d), payload \""
+                    _FURI_LOG_CLR_RESET,
+                    furi_get_tick(),
+                    _FURI_LOG_CLR_I,
+                    adlength,
+                    adtype,
+                    k );
+
+                for (int i = 0; i < adlength; i++)
+                {
+                    uint8_t b = adv_report_data[k + 1 + i];
+                    if (i == 0) {
+                        furi_log_print_raw_format(
+                            FuriLogLevelInfo,
+                            "%02X", b);
+                    } else {
+                        furi_log_print_raw_format(
+                            FuriLogLevelInfo,
+                            " %02X", b);
+                    }
+                }
+
+                furi_log_print_raw_format(
+                    FuriLogLevelInfo,
+                    "\"\r\n");
+
+                k += adlength + 1;
+
                 switch (adtype)
                 {
                     case AD_TYPE_FLAGS: /* now get flags */
@@ -223,7 +254,6 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
                         /* USER CODE END adtype_default */
                         break;
                 } /* end switch adtype */
-                k += adlength + 1;
             }
         }
 
