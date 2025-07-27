@@ -125,11 +125,6 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
 
     hci_event_pckt* event_pckt = (hci_event_pckt*)(((hci_uart_pckt*)event)->data);
 
-    FURI_LOG_I(
-        TAG,
-        "received event in ble tool: event code: 0x%x",
-        event_pckt->evt);
-
     ble_tools->events++;
 
     if(event_pckt->evt == HCI_VENDOR_SPECIFIC_DEBUG_EVT_CODE) {
@@ -158,110 +153,103 @@ static BleEventAckStatus ble_tools_event_handler(void* event, void* context) {
     }
 
     if(subevent_code == HCI_LE_ADVERTISING_REPORT_SUBEVT_CODE) {
-        FURI_LOG_I(TAG, "received advertising response");
+        assert(meta_event->data[0] == 1);
 
-        hci_le_advertising_report_event_rp0 *rp0 = (void*) meta_event->data;
-        int report_index;
-        for (report_index = 0; report_index < rp0->Num_Reports; report_index++) {
-            Advertising_Report_t report = rp0->Advertising_Report[report_index];
-            uint8_t event_data_size = report.Length_Data;
+        FURI_LOG_I(
+            TAG,
+            "received advertising response from %02X-%02X-%02X-%02X-%02X-%02X",
+            meta_event->data[3],
+            meta_event->data[4],
+            meta_event->data[5],
+            meta_event->data[6],
+            meta_event->data[7],
+            meta_event->data[8] );
 
-            FURI_LOG_I(
-                TAG,
-                "received advertising response from %02X-%02X-%02X-%02X-%02X-%02X",
-                report.Address[0],
-                report.Address[1],
-                report.Address[2],
-                report.Address[3],
-                report.Address[4],
-                report.Address[5] );
+        int data_index = 10;
+        uint8_t event_data_size = meta_event->data[9];
 
-            int k = 0;
-            uint8_t *adv_report_data;
-            adv_report_data = (uint8_t*)(&report.Length_Data) + 1;
+        while(data_index < event_data_size)
+        {
+            uint8_t adlength = meta_event->data[data_index];
+            uint8_t adtype = meta_event->data[data_index + 1];
 
-            while(k < event_data_size)
+            furi_log_print_raw_format(
+                FuriLogLevelDebug,
+                "%lu %s[D][BleTool =^_^=] size %d, type %d, (initial data_index %d), payload \""
+                _FURI_LOG_CLR_RESET,
+                furi_get_tick(),
+                _FURI_LOG_CLR_I,
+                adlength,
+                adtype,
+                data_index );
+
+            for (int i = 0; i <= adlength; i++)
             {
-                uint8_t adlength = adv_report_data[k];
-                uint8_t adtype = adv_report_data[k + 1];
-
-                furi_log_print_raw_format(
-                    FuriLogLevelInfo,
-                    "%lu %s[I][BleTool =^_^=] size %d, type %d, (initial k %d), payload \""
-                    _FURI_LOG_CLR_RESET,
-                    furi_get_tick(),
-                    _FURI_LOG_CLR_I,
-                    adlength,
-                    adtype,
-                    k );
-
-                for (int i = 0; i < adlength; i++)
-                {
-                    uint8_t b = adv_report_data[k + 1 + i];
-                    if (i == 0) {
-                        furi_log_print_raw_format(
-                            FuriLogLevelInfo,
-                            "%02X", b);
-                    } else {
-                        furi_log_print_raw_format(
-                            FuriLogLevelInfo,
-                            " %02X", b);
-                    }
+                uint8_t b = meta_event->data[data_index + i];
+                if (i == 0) {
+                    furi_log_print_raw_format(
+                        FuriLogLevelDebug,
+                        "%02X", b);
+                } else {
+                    furi_log_print_raw_format(
+                        FuriLogLevelDebug,
+                        " %02X", b);
                 }
-
-                furi_log_print_raw_format(
-                    FuriLogLevelInfo,
-                    "\"\r\n");
-
-                k += adlength + 1;
-
-                switch (adtype)
-                {
-                    case AD_TYPE_FLAGS: /* now get flags */
-                        /* USER CODE BEGIN AD_TYPE_FLAGS */
-                        FURI_LOG_I(TAG, "flags");
-
-                        /* USER CODE END AD_TYPE_FLAGS */
-                        break;
-
-                    case AD_TYPE_TX_POWER_LEVEL: /* Tx power level */
-                        /* USER CODE BEGIN AD_TYPE_TX_POWER_LEVEL */
-                        FURI_LOG_I(TAG, "transmit power level");
-
-                        /* USER CODE END AD_TYPE_TX_POWER_LEVEL */
-                        break;
-
-                    case AD_TYPE_SERVICE_DATA: /* service data 16 bits */
-                        /* USER CODE BEGIN AD_TYPE_SERVICE_DATA */
-                        FURI_LOG_I(TAG, "service data");
-
-                        /* USER CODE END AD_TYPE_SERVICE_DATA */
-                        break;
-                    case AD_TYPE_SHORTENED_LOCAL_NAME:
-                        FURI_LOG_I(TAG, "name");
-                        break;
-                    case AD_TYPE_COMPLETE_LOCAL_NAME:
-                        FURI_LOG_I(TAG, "complete name");
-                        break;
-                    case AD_TYPE_APPEARANCE:
-                        FURI_LOG_I(TAG, "appearance");
-                        break;
-
-                    default:
-                        /* USER CODE BEGIN adtype_default */
-                        FURI_LOG_I(TAG, "not sure %d", adtype);
-
-                        /* USER CODE END adtype_default */
-                        break;
-                } /* end switch adtype */
             }
+
+            furi_log_print_raw_format(
+                FuriLogLevelDebug,
+                "\"\r\n");
+
+            data_index += adlength + 1;
+
+            switch (adtype)
+            {
+                case AD_TYPE_FLAGS: /* now get flags */
+                    /* USER CODE BEGIN AD_TYPE_FLAGS */
+                    FURI_LOG_I(TAG, "advertising data: flags");
+
+                    /* USER CODE END AD_TYPE_FLAGS */
+                    break;
+
+                case AD_TYPE_TX_POWER_LEVEL: /* Tx power level */
+                    /* USER CODE BEGIN AD_TYPE_TX_POWER_LEVEL */
+                    FURI_LOG_I(TAG, "advertising data: transmit power level");
+
+                    /* USER CODE END AD_TYPE_TX_POWER_LEVEL */
+                    break;
+
+                case AD_TYPE_SERVICE_DATA: /* service data 16 bits */
+                    /* USER CODE BEGIN AD_TYPE_SERVICE_DATA */
+                    FURI_LOG_I(TAG, "advertising data: service data");
+
+                    /* USER CODE END AD_TYPE_SERVICE_DATA */
+                    break;
+                case AD_TYPE_SHORTENED_LOCAL_NAME:
+                    FURI_LOG_I(TAG, "advertising data: name");
+                    break;
+                case AD_TYPE_COMPLETE_LOCAL_NAME:
+                    FURI_LOG_I(TAG, "advertising data: complete name");
+                    break;
+                case AD_TYPE_APPEARANCE:
+                    FURI_LOG_I(TAG, "advertising data: appearance");
+                    break;
+                case 0xFF:
+                    FURI_LOG_I(TAG, "advertising data: vendor specific");
+                    break;
+
+                default:
+                    /* USER CODE BEGIN adtype_default */
+                    FURI_LOG_I(TAG, "advertising data was for a type that we don't handle: %d", adtype);
+
+                    /* USER CODE END adtype_default */
+                    break;
+            } /* end switch adtype */
         }
 
-        FURI_LOG_I(TAG, "Ack");
         return BleEventAckFlowEnable;
     }
 
-    FURI_LOG_I(TAG, "ack (disable)");
     return BleEventAckFlowDisable;
 }
 
