@@ -267,7 +267,7 @@ static void ble_command_scan_start(void* context) {
     cmd_buffer[2] = 0x20; // window
     cmd_buffer[3] = 0x03; 
     cmd_buffer[4] = 0x01; // own address type (random)
-    cmd_buffer[5] = 0x00; // disable filtering
+    cmd_buffer[5] = 0x01; // enable filtering
 
     // opcode group field
     rq.ogf = 0x3f;
