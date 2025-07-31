@@ -300,7 +300,7 @@ static void ble_command_scan_stop(void* context) {
     tBleStatus status = 0;
 
     uint8_t cmd_buffer[2];
-    cmd_buffer[0] = 0x01; // limited discovery procedure
+    cmd_buffer[0] = 0x02; // limited discovery procedure
 
     // opcode group field
     rq.ogf = 0x3f;
