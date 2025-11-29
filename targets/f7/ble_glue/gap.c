@@ -585,7 +585,7 @@ bool gap_init(
     gap->state_mutex = furi_mutex_alloc(FuriMutexTypeNormal);
     gap->state = GapStateIdle;
     gap->service.connection_handle = 0xFFFF;
-    gap->enable_adv = true;
+    gap->enable_adv = (config->role & GAP_PERIPHERAL_ROLE) != 0;
 
     // Command queue allocation
     gap->command_queue = furi_message_queue_alloc(8, sizeof(GapCommand));
