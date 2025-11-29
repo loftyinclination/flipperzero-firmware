@@ -72,7 +72,7 @@ static GapConfig scan_template_config = {
             .UUID_Type = UUID_TYPE_16,
             .Service_UUID_16 = 0xa6a6, // is only used in setting the advertising service uid, but we're central, so we don't care about advertising
         },
-    .masks =
+    /*.masks =
         {
             .event = DEFAULT_EVENT_MASK,
             //.event = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0b0001'0000}, // only meta events = 61
@@ -82,7 +82,7 @@ static GapConfig scan_template_config = {
             //    0b0001'0000, // le extended advertising report event = 12
             //    0b0000'0001, // le scan timeout event = 16
             //    0x00, 0x00, 0x00, 0x00, 0x00},
-        },
+        }, */
     .role = GAP_CENTRAL_ROLE,
     .appearance_char = 0x04CD, // required as part of GAP_SERVICE GATT field
     .bonding_mode = false, // we're only scanning, don't need to remember anything

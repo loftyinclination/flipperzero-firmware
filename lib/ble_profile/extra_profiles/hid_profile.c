@@ -385,11 +385,6 @@ static GapConfig template_config = {
         .Service_UUID_16 = HUMAN_INTERFACE_DEVICE_SERVICE_UUID,
     },
     .role = GAP_PERIPHERAL_ROLE,
-    .masks =
-        {
-            .event = DEFAULT_EVENT_MASK,
-            .le_event = DEFAULT_LE_EVENT_MASK,
-        },
     .appearance_char = GAP_APPEARANCE_KEYBOARD,
     .bonding_mode = true,
     .pairing_method = GapPairingPinCodeVerifyYesNo,
