@@ -224,6 +224,7 @@ void furi_hal_bt_reinit(void) {
         FURI_LOG_I(TAG, "Stop current profile services");
         current_profile->config->stop(current_profile);
         current_profile = NULL;
+        FURI_LOG_I(TAG, "Stopped current profile services");
     }
 
     // Magic happens here

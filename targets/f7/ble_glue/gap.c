@@ -302,12 +302,17 @@ BleEventFlowStatus ble_event_app_notification(void* pckt) {
             }
             break;
         }
+
+        default:
+            FURI_LOG_D(TAG, "did not handle vendor specific event");
+            break;
         }
     default:
         break;
     }
 
     furi_check(furi_mutex_release(gap->state_mutex) == FuriStatusOk);
+    FURI_LOG_D(TAG, "released mutex");
 
     return BleEventFlowEnable;
 }
@@ -444,6 +449,7 @@ static void gap_init_svc(Gap* gap, const GapRootSecurityKeys* root_keys) {
     // Configure whitelist
     FURI_LOG_T(TAG, "configuring whitelist");
     aci_gap_configure_filter_accept_list();
+    FURI_LOG_D(TAG, "successfully initialised gap service");
 }
 
 static void gap_advertise_start(GapState new_state) {
