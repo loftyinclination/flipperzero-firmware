@@ -70,7 +70,7 @@ static GapConfig scan_template_config = {
     .adv_service =
         {
             .UUID_Type = UUID_TYPE_16,
-            .Service_UUID_16 = 0xa6a6, // doesn't matter
+            .Service_UUID_16 = 0xa6a6, // is only used in setting the advertising service uid, but we're central, so we don't care about advertising
         },
     .masks =
         {
@@ -84,10 +84,15 @@ static GapConfig scan_template_config = {
             //    0x00, 0x00, 0x00, 0x00, 0x00},
         },
     .role = GAP_CENTRAL_ROLE,
-    .appearance_char = 0x8600, // doesn't matter
+    .appearance_char = 0x04CD, // required as part of GAP_SERVICE GATT field
     .bonding_mode = false, // we're only scanning, don't need to remember anything
-    .pairing_method = GapPairingPinCodeShow,
+    .pairing_method = GapPairingNone,
+    // only a central can command pairing to begin, and we're central in this case, so we just won't
+    // TODO: capture the HCI_LE_CONNECTION_COMPLETE_SUBEVT_CODE method to avoid sending the peripheral command
+    // additionally, this is used on startup to configure fields (in the GAP struct and on the COPRO) that we don't care about
     .conn_param = {
+        // unused, only called when a connection is completed and the event is not handled by an upstream handler
+        // and only attempts to negotiate the connection parameters
         .conn_int_min = CONNECTION_INTERVAL_MIN,
         .conn_int_max = CONNECTION_INTERVAL_MAX,
         .slave_latency = 0,
