@@ -90,7 +90,7 @@ void submenu_reset(Submenu* submenu);
  *
  * @return     Index of the selected item
  */
-uint32_t submenu_get_selected_item(Submenu* submenu);
+uint32_t submenu_get_selected_item(const Submenu* submenu);
 
 /** Set submenu selected item by index
  *

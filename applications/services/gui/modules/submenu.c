@@ -278,7 +278,7 @@ void submenu_reset(Submenu* submenu) {
         true);
 }
 
-uint32_t submenu_get_selected_item(Submenu* submenu) {
+uint32_t submenu_get_selected_item(const Submenu* submenu) {
     furi_check(submenu);
 
     uint32_t selected_item_index = 0;
