@@ -1,0 +1,14 @@
+App(
+    appid="ble_tools",
+    name="Tools",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="ble_tools_app",
+    stack_size=1 * 1024,
+    fap_description="Debug BLE connections",
+    cdefines=["SRV_BT"],
+    requires=["bt"],
+    fap_version="1.0",
+    fap_category="Bluetooth",
+    fap_icon="ble_10px.png",
+    fap_icon_assets="assets",
+)
