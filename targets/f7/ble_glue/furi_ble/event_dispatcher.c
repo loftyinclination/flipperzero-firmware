@@ -114,6 +114,7 @@ void ble_event_dispatcher_unregister_svc_handler(GapSvcEventHandler* handler) {
 
     bool found = false;
     GapSvcEventHandlerList_it_t it;
+    uint8_t index = 0;
 
     for(GapSvcEventHandlerList_it(it, handlers); !GapSvcEventHandlerList_end_p(it);
         GapSvcEventHandlerList_next(it)) {
@@ -122,8 +123,15 @@ void ble_event_dispatcher_unregister_svc_handler(GapSvcEventHandler* handler) {
         if(item == handler) {
             GapSvcEventHandlerList_remove(handlers, it);
             found = true;
+            FURI_LOG_E("BleEventDispatcher", "Found BLE event handler at position %i", index);
             break;
         }
+
+        index++;
+    }
+
+    if(!found) {
+        FURI_LOG_E("BleEventDispatcher", "Could not find handler to remove");
     }
 
     furi_check(found);

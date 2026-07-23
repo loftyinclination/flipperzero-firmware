@@ -113,8 +113,6 @@ static void gap_verify_connection_parameters(Gap* gap) {
 }
 
 BleEventFlowStatus ble_event_app_notification(void* pckt) {
-    FURI_LOG_I(TAG, "received BLE event");
-
     hci_event_pckt* event_pckt;
     evt_le_meta_event* meta_evt;
     evt_blecore_aci* blue_evt;
@@ -125,12 +123,9 @@ BleEventFlowStatus ble_event_app_notification(void* pckt) {
 
     event_pckt = (hci_event_pckt*)((hci_uart_pckt*)pckt)->data;
 
-    FURI_LOG_D(TAG, "gap set? %c", gap != NULL);
     furi_delay_ms(200);
     furi_check(gap);
     furi_check(furi_mutex_acquire(gap->state_mutex, FuriWaitForever) == FuriStatusOk);
-
-    FURI_LOG_T(TAG, "received BLE event");
 
     switch(event_pckt->evt) {
     case HCI_DISCONNECTION_COMPLETE_EVT_CODE: {

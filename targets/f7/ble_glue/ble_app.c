@@ -115,9 +115,7 @@ void ble_app_get_key_storage_buff(uint8_t** addr, uint16_t* size) {
 }
 
 void ble_app_deinit(void) {
-    FURI_LOG_I(TAG, "attempting to deinit");
     furi_check(ble_app);
-    FURI_LOG_T(TAG, "passed checks");
 
     furi_mutex_free(ble_app->hci_mtx);
     furi_semaphore_free(ble_app->hci_sem);
@@ -132,22 +130,17 @@ void ble_app_deinit(void) {
 void hci_cmd_resp_release(uint32_t flag) {
     UNUSED(flag);
     furi_check(ble_app);
-    FURI_LOG_D(TAG, "HCI/ACI command is being released");
     furi_check(furi_semaphore_release(ble_app->hci_sem) == FuriStatusOk);
 }
 
 void hci_cmd_resp_wait(uint32_t timeout) {
     furi_check(ble_app);
-    uint32_t count = furi_semaphore_get_count(ble_app->hci_sem);
-    FURI_LOG_D(TAG, "HCI/ACI command has been sent to CPU 2, waiting for release (currently held by %ld)", count);
     furi_check(furi_semaphore_acquire(ble_app->hci_sem, timeout) == FuriStatusOk);
-    FURI_LOG_D(TAG, "HCI/ACI command been released");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 static void ble_app_hci_event_handler(void* pPayload) {
-    FURI_LOG_D(TAG, "hci event received by event handler");
     furi_check(ble_app);
 
     tHCI_UserEvtRxParam* pParam = (tHCI_UserEvtRxParam*)pPayload;
@@ -162,7 +155,6 @@ static void ble_app_hci_event_handler(void* pPayload) {
 }
 
 static void ble_app_hci_status_not_handler(HCI_TL_CmdStatus_t status) {
-    FURI_LOG_D(TAG, "hci status notification received by event handler");
     if(status == HCI_TL_CmdBusy) {
         furi_hal_power_insomnia_enter();
         furi_mutex_acquire(ble_app->hci_mtx, FuriWaitForever);
